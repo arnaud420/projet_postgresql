@@ -3,6 +3,6 @@
         "host": "database",
         "user": "admin",
         "password": "password",
-        "db_name": "test"
+        "port": 5432
     }
 }
