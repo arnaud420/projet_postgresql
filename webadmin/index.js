@@ -7,9 +7,10 @@
 const express = require('express')
 const app = express()
 const config = require('config')
-const client = require('./database')
+const client = require('./database')('test')
 
 app.get('/', async (req, res) => {
+
 })
 
 app.listen(process.env.SERVER_PORT, () => {
