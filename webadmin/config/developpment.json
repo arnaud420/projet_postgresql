@@ -4,5 +4,6 @@
         "user": "admin",
         "password": "password",
         "port": 5432
-    }
+    },
+    "backupDirectory": "backups"
 }

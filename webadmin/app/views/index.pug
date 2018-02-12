@@ -1,8 +1,13 @@
 html
-  head
-    title= title
-  body
-    ul 
-        each db in databases
-            li #{ db.datname }
+    head
+        title=title
+        link(rel="stylesheet" href="css/main.css")
+    body
+        h1="Database Admin Backup"
+        ul 
+            each db in databases
+                li
+                    a(href="/database/" + db.datname) #{ db.datname }
+
+        script(src="js/app.js")
 
