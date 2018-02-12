@@ -20,9 +20,18 @@ class AdminDB {
                 password: config.password,
                 database: this.name
         })
+
+        client.connect()
+
+        return client
     }
 
     save () {
+
+    }
+
+    generate () {
+
     }
 }
 

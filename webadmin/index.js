@@ -7,10 +7,14 @@
 const express = require('express')
 const app = express()
 const config = require('config')
-const client = require('./database')('test')
+const { listAllDb, AdminDB } = require('./database')
+const morgan = require('morgan')
 
-app.get('/', async (req, res) => {
+app.use(express.static('./public'))
+app.use(morgan('tiny'))
 
+app.get('/databases', async (req, res) => {
+    console.log(await listAllDb())
 })
 
 app.listen(process.env.SERVER_PORT, () => {
