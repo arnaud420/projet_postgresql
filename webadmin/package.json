@@ -1,10 +1,10 @@
 {
   "name": "projet_postgresql",
   "version": "1.0.0",
-  "description": "",
+  "description": "Authors: - Antoine Chiny - Arnaud Lafon",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ."
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/arnaud420/projet_postgresql/issues"
   },
-  "homepage": "https://github.com/arnaud420/projet_postgresql#readme"
+  "homepage": "https://github.com/arnaud420/projet_postgresql#readme",
+  "dependencies": {
+    "config": "^1.29.4",
+    "express": "^4.16.2"
+  }
 }
