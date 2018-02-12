@@ -4,19 +4,11 @@
  *  Description:
 **/
 
-const express = require('express')
-const app = express()
-const config = require('config')
-const { listAllDb, AdminDB } = require('./database')
-const morgan = require('morgan')
+const app = require('./app')
+const http = require('http').Server(app)
+const port = process.env.SERVER_PORT
 
-app.use(express.static('./public'))
-app.use(morgan('tiny'))
-
-app.get('/databases', async (req, res) => {
-    console.log(await listAllDb())
+http.listen(port, () => {
+    console.log(`Server running on port ${port}`)
 })
 
-app.listen(process.env.SERVER_PORT, () => {
-    console.log(`Server running on port ${process.env.SERVER_PORT}`)
-})

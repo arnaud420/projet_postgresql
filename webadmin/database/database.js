@@ -7,12 +7,20 @@
 const { Client } = require('pg')
 const config = require('config').database
 
-class AdminDB {
+class Database {
     constructor (name) {
         this.name = name
     }
 
-    getPgClient () {
+    static async list () {
+        const globalDatabase = new Database('postgres')
+        const client = globalDatabase.client
+        const tables = await client.query('SELECT datname FROM pg_database WHERE datistemplate = false')
+
+        return tables.rows
+    }
+
+    get client () {
         const client = new Client({
                 user: config.user,
                 host: config.host,
@@ -35,4 +43,4 @@ class AdminDB {
     }
 }
 
-module.exports = AdminDB
+module.exports = Database
