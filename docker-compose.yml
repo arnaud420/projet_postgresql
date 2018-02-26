@@ -1,26 +1,10 @@
 version: '3'
 services:
     database:
-        image: postgres
+        image: mariadb
         restart: always
         environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=password
-            - POSTGRES_DB=test
-    admin:
-        image: fenglc/pgadmin4
-        ports:
-            - 127.0.0.1:5050:5050
-        links:
-            - database:database
-    web:
-        build: ./webadmin
-        restart: always
-        volumes:
-            - ./webadmin:/webadmin
-        depends_on:
-            - database
-            - admin
-        ports:
-            - 127.0.0.1:3000:3000
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_DATABASE=test
+            - MYSQL_USER=admin
 
