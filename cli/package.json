@@ -3,8 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "node bin"
+    "start": "export NODE_ENV=developpment && node bin"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "config": "^1.29.4",
+    "knex": "^0.14.4",
+    "mysql": "^2.15.0"
+  }
 }
