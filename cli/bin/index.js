@@ -4,16 +4,29 @@
  *  Description:
 **/
 
-// const config = require('config').database;
-// const Backup = require('./modules/backup');
+const generate = require('./modules/generate');
+const Backup = require('./modules/backup');
+const newBackup = new Backup('test');
+const mysqldump = require('mysqldump');
 
-// const newBackup = new Backup({
-//     host: '127.0.0.1',
-//     user: 'root',
-//     password: 'password',
-// });
+async function main() {
+    try {
+        const dbnames = await newBackup.getDatabases()
 
-// console.log(newBackup.listDatabases())
-// const knex = require('knex')(config)
-const generate = require('./modules/generate')()
+        dbnames.forEach(name => {
+            mysqldump({
+                    host: 'localhost',
+                    user: 'root',
+                    password: 'password',
+                    database: name,
+                    dest: `./backups/${name}.sql`
+            }, (err) => {
+                console.error(err)
+            })
+        })
+    } catch (error) {
+        console.error(error)
+    }
+}
 
+main();

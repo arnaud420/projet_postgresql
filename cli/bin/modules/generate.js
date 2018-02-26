@@ -8,7 +8,7 @@ const path = require('path');
 const importer = require('node-mysql-importer');
 
 module.exports = () => {
-    const sql = path.join(__dirname, '../../seeds/users.sql');
+    const sql = path.join(__dirname, '../../seeds/companies.sql');
 
     importer.config({
             'host': '127.0.0.1',
