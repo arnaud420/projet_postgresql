@@ -7,6 +7,12 @@
             "password": "password",
             "database": "test"
         }
-    }
+    },
+    "ignored_databases": [
+        "information_schema",
+        "mysql",
+        "performance_schema"
+    ],
+    "backupPath": "./backups/"
 }
 
