@@ -10,7 +10,6 @@
   "dependencies": {
     "app-module-path": "^2.2.0",
     "commander": "^2.15.0",
-    "config": "^1.29.4",
     "knex": "^0.14.4",
     "moment": "^2.21.0",
     "mysql": "^2.15.0",

@@ -24,7 +24,6 @@ module.exports = class BackupsPool {
             const parsedPath = path.parse(backupPath);
             const [ database, createdAt ] = parsedPath.name.split('-');
             console.log(database, createdAt);
-
         } catch (err) {
             console.error(err.message);
         }
