@@ -7,8 +7,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const moment = require('moment');
-
 module.exports = class BackupsPool {
     constructor (rootPath) {
         this.rootPath = rootPath;

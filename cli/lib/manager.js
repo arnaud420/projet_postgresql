@@ -9,11 +9,15 @@ const path = require('path');
 
 const mysql = require('mysql');
 const config = require('config');
-
+const mysqldump = require('mysqldump');
 const BackupsPool = require('./backup');
 
 class Manager {
     constructor ({ host, user, password, database }, cmd) {
+        this.host = host;
+        this.user = user;
+        this.password = password;
+        this.database = database;
         this.connection = mysql.createConnection({ host, user, password });
         this.cmd = cmd;
 
@@ -49,6 +53,21 @@ class Manager {
     }
 
     save () {
+        return new Promise((resolve, reject) => {
+            const filename = `${this.database}-${new Date().valueOf()}.sql`;
+            const fullPath = path.join(config.backupPath, filename);
+
+            mysqldump({
+                    host: this.host,
+                    user: this.user,
+                    password: this.password,
+                    database: this.database,
+                    dest: fullPath
+            }, (err) => {
+                if (err) return reject(err)
+                return resolve(fullPath)
+            })
+        })
     }
 
     // listBackups () {

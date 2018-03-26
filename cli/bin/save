@@ -8,7 +8,6 @@
 // Specify root dir
 require('app-module-path').addPath(__dirname + '/..')
 
-const mysqldump = require('mysqldump');
 const config = require('config');
 
 // Import classes
@@ -27,7 +26,13 @@ async function main() {
 
     console.log(manager.backups.load())
     console.log(manager.backups.sort())
-    // console.log(manager.backups.list)
+
+    try {
+        const newSave = await manager.save()
+        console.log(newSave)
+    } catch(e) {
+        console.error(e.message)
+    }
 }
 
 main();
