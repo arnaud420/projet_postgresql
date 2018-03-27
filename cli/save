@@ -6,7 +6,7 @@
 **/
 
 // Specify root dir
-require('app-module-path').addPath(__dirname + '/..')
+require('app-module-path').addPath(__dirname);
 
 const config = require('config');
 
@@ -24,12 +24,13 @@ async function main() {
     // Get databases
     console.log(await manager.listDatabases());
 
-    console.log(manager.backups.load())
-    console.log(manager.backups.sort())
+    manager.loadBackups();
+    manager.backupslist.forEach(backup => console.log(backup))
 
     try {
-        const newSave = await manager.save()
-        console.log(newSave)
+        const newSave = await manager.save('wordpress')
+        manager.store();
+        manager.exit();
     } catch(e) {
         console.error(e.message)
     }

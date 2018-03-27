@@ -9,6 +9,7 @@
   "license": "ISC",
   "dependencies": {
     "app-module-path": "^2.2.0",
+    "archiver": "^2.1.1",
     "commander": "^2.15.0",
     "knex": "^0.14.4",
     "moment": "^2.21.0",

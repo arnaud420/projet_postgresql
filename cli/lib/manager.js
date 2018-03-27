@@ -10,19 +10,32 @@ const path = require('path');
 const mysql = require('mysql');
 const config = require('config');
 const mysqldump = require('mysqldump');
-const BackupsPool = require('./backup');
+const Backups = require('./backup');
+const archiver = require('archiver');
 
 class Manager {
-    constructor ({ host, user, password, database }, cmd) {
+    constructor ({ host, user, password }, cmd) {
         this.host = host;
         this.user = user;
         this.password = password;
-        this.database = database;
         this.connection = mysql.createConnection({ host, user, password });
         this.cmd = cmd;
+        this.saveCache = [];
 
-        this.backups = new BackupsPool(config.backupPath);
+        this.archiveOutput = fs.createWriteStream(path.join(config.backupPath, 'new_save.zip'));
+        this.zip = archiver('zip');
+        this.zip.pipe(this.archiveOutput);
+
+        this.backups = new Backups(config.backupPath);
         this.dblist = [];
+    }
+
+    get timestamp () {
+        return new Date().toLocaleString().replace(/[:| ]/g, '-');
+    }
+
+    get backupslist () {
+        return this.backups.list;
     }
 
     query (expression) {
@@ -37,7 +50,8 @@ class Manager {
     async testConnection () {
         try {
             const { results, fields } = await this.query('SELECT 1+1 AS RESULT');
-            return;
+            console.log(`Database connected.`);
+            return null;
         } catch (e) {
             console.error('Fail to connect to database.');
             console.error(e.message);
@@ -47,34 +61,51 @@ class Manager {
 
     async listDatabases () {
         const { results, fields } = await this.query('SHOW DATABASES');
+
         this.dblist = results.map(row => row.Database)
-            .filter(name => config.ignored_databases.indexOf(name) === -1);
+        .filter(name => config.ignored_databases.indexOf(name) === -1);
         return this.dblist;
     }
 
-    save () {
+    loadBackups () {
+        const numberOfBackups = this.backups.load(this.dblist);
+        console.log(`${numberOfBackups} backups loaded.`)
+    }
+
+    save (dbname) {
         return new Promise((resolve, reject) => {
-            const filename = `${this.database}-${new Date().valueOf()}.sql`;
+            const filename = `${dbname}_${this.timestamp}.sql`;
             const fullPath = path.join(config.backupPath, filename);
 
             mysqldump({
-                    host: this.host,
-                    user: this.user,
-                    password: this.password,
-                    database: this.database,
-                    dest: fullPath
-            }, (err) => {
-                if (err) return reject(err)
-                return resolve(fullPath)
-            })
-        })
+                host: this.host,
+                user: this.user,
+                password: this.password,
+                database: dbname,
+                dest: fullPath,
+            }, err => {
+                if (err) return reject(err.message);
+                console.log(`New save created: ${filename}`);
+
+                this.saveCache.push(fullPath);
+                return resolve(fullPath);
+            });
+        });
     }
 
-    // listBackups () {
-    //     this.backuplist = fs.readdirSync(config.backupPath)
-    //         .map(file => path.join(config.backupPath, file));
-    //     return this.backuplist;
-    // }
+    store () {
+        this.saveCache.forEach(save => {
+            const filestat = path.parse(save);
+            const savePath = path.join(__dirname, '..', save);
+            this.zip.append(fs.createReadStream(savePath), { name: filestat.base });
+        });
+    }
+
+    exit() {
+        this.zip.finalize();
+        this.saveCache.forEach(path => fs.unlinkSync(path));
+        process.exit(0);
+    }
 }
 
 module.exports = Manager

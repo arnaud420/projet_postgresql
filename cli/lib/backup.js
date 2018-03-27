@@ -7,36 +7,40 @@
 const fs = require('fs');
 const path = require('path');
 
-module.exports = class BackupsPool {
+module.exports = class Backups {
     constructor (rootPath) {
         this.rootPath = rootPath;
         this.list = [];
     }
 
-    static unserialize (backup) {
-
+    fromFileToDate ([ year, month, day, hour, min, sec ]) {
+        return new Date(year, month, day, hour, min, sec);
     }
 
-    static serialize (backupPath) {
-        try {
-            const parsedPath = path.parse(backupPath);
-            const [ database, createdAt ] = parsedPath.name.split('-');
-            console.log(database, createdAt);
-        } catch (err) {
-            console.error(err.message);
+    validateFile (filename, databases) {
+        const filestat = path.parse(filename);
+        const [ dbname, createdAt ] = filestat.name.split('_');
+
+        if (filestat.ext !== '.sql' || databases.indexOf(dbname) === -1){
+            return null;
         }
+
+        const timestamp = this.fromFileToDate(createdAt.split('-'))
+        return {
+            filename: filename,
+            database: dbname,
+            timestamp: timestamp 
+        };
     }
 
-    load () {
-        this.list = fs.readdirSync(this.rootPath)
+    load (databases) {
+        const files = fs.readdirSync(this.rootPath);
+
+        for (let i = 0; i < files.length; i++) {
+            const backup = this.validateFile(files[i], databases);
+            if (backup) this.list.push(backup);
+        }
         return this.list.length;
     }
-
-    sort () {
-        const sortedBackup = [];
-
-        this.list.forEach(path => {
-            console.log(BackupsPool.serialize(path))
-        });
-    }
 }
+
