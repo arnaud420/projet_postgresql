@@ -11,7 +11,6 @@ const mysql = require('mysql');
 const config = require('config');
 const mysqldump = require('mysqldump');
 const Backups = require('./backup');
-const archiver = require('archiver');
 
 class Manager {
     constructor ({ host, user, password }, cmd) {
@@ -22,16 +21,12 @@ class Manager {
         this.cmd = cmd;
         this.saveCache = [];
 
-        this.archiveOutput = fs.createWriteStream(path.join(config.backupPath, 'new_save.zip'));
-        this.zip = archiver('zip');
-        this.zip.pipe(this.archiveOutput);
-
         this.backups = new Backups(config.backupPath);
         this.dblist = [];
     }
 
     get timestamp () {
-        return new Date().toLocaleString().replace(/[:| ]/g, '-');
+        return new Date().toISOString();
     }
 
     get backupslist () {
@@ -63,7 +58,7 @@ class Manager {
         const { results, fields } = await this.query('SHOW DATABASES');
 
         this.dblist = results.map(row => row.Database)
-        .filter(name => config.ignored_databases.indexOf(name) === -1);
+            .filter(name => config.ignored_databases.indexOf(name) === -1);
         return this.dblist;
     }
 
@@ -97,13 +92,10 @@ class Manager {
         this.saveCache.forEach(save => {
             const filestat = path.parse(save);
             const savePath = path.join(__dirname, '..', save);
-            this.zip.append(fs.createReadStream(savePath), { name: filestat.base });
         });
     }
 
     exit() {
-        this.zip.finalize();
-        this.saveCache.forEach(path => fs.unlinkSync(path));
         process.exit(0);
     }
 }

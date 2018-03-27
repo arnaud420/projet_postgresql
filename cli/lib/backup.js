@@ -13,8 +13,8 @@ module.exports = class Backups {
         this.list = [];
     }
 
-    fromFileToDate ([ year, month, day, hour, min, sec ]) {
-        return new Date(year, month, day, hour, min, sec);
+    fromFileToDate (timestamp) {
+        return Date.parse(timestamp);
     }
 
     validateFile (filename, databases) {
@@ -25,7 +25,7 @@ module.exports = class Backups {
             return null;
         }
 
-        const timestamp = this.fromFileToDate(createdAt.split('-'))
+        const timestamp = this.fromFileToDate(createdAt)
         return {
             filename: filename,
             database: dbname,
