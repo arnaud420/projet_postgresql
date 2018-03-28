@@ -9,12 +9,11 @@ const path = require('path');
 
 const mysql = require('mysql');
 const config = require('config');
-const mysqldump = require('mysqldump');
 const Backups = require('./backup');
 const Database = require('./database');
 
 class Manager {
-    constructor ({ host, user, password }, cmd) {
+    constructor ({ host, user, password }, cmd, logging=true) {
         this.host = host;
         this.user = user;
         this.password = password;
@@ -25,6 +24,11 @@ class Manager {
         this.saveCache = [];
 
         this.backups = new Backups(config.backupPath);
+        this.logging = logging;
+    }
+
+    get dbnames() {
+        return this.databases.map(db => db.name);
     }
 
     get timestamp () {
@@ -33,6 +37,16 @@ class Manager {
 
     get backupslist () {
         return this.backups.list;
+    }
+
+    log (message, err=false) {
+        if (this.logging) {
+            if (!err) {
+                console.log(message);
+            } else {
+                console.error(message);
+            }
+        }
     }
 
     query (expression) {
@@ -47,11 +61,11 @@ class Manager {
     async testConnection () {
         try {
             const { results, fields } = await this.query('SELECT 1+1 AS RESULT');
-            console.log(`Database connected.`);
+            this.log(`Database connected.`);
             return null;
         } catch (e) {
-            console.error('Fail to connect to database.');
-            console.error(e.message);
+            this.log('Fail to connect to database.', true);
+            this.log(e.message, true);
             process.exit(50);
         }
     }
@@ -65,19 +79,41 @@ class Manager {
             const dbname = dbnames[i];
             const database = new Database(dbname, this.connection);
             const tables = await database.loadTables();
+
+            this.log(`Found database: ${dbname}`);
+            tables.forEach(table => {
+                this.log(`--> Load table: ${table}`);
+            });
             this.databases.push(database);
         }
     }
 
     loadBackups () {
-        const numberOfBackups = this.backups.load(this.dblist);
-        console.log(`${numberOfBackups} backups loaded.`)
+        const numberOfBackups = this.backups.load(this.dbnames);
+        this.log(`${numberOfBackups} backups loaded.`)
     }
 
-    save (dbname) {
-    }
+    async save (databaseToSave) {
+        if (databaseToSave) {
+            databaseToSave = this.databases.filter(db => {
+                return (databaseToSave.indexOf(db.name) !== -1);
+            });
+        } else {
+            databaseToSave = this.databases
+        }
 
-    store () {
+        let step = 0;
+        while (step < databaseToSave.length) {
+            const db = databaseToSave[step];
+
+            this.log(`Saving database --> ${db.name}`);
+            try {
+                const status = await db.save();
+            } catch (err) {
+                throw err;
+            }
+            step++;
+        }
     }
 
     exit() {

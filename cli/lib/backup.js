@@ -18,19 +18,20 @@ module.exports = class Backups {
     }
 
     validateFile (filename, databases) {
-        const filestat = path.parse(filename);
-        const [ dbname, createdAt ] = filestat.name.split('_');
+        const [ fullname, ext ] = filename.split('.tar.gz');
+        const [ dbname, createdAt ] = fullname.split('_');
 
-        if (filestat.ext !== '.sql' || databases.indexOf(dbname) === -1){
+        if (typeof(ext) !== 'undefined' && databases.indexOf(dbname) !== -1) {
+            const timestamp = this.fromFileToDate(createdAt);
+
+            return {
+                filename: filename,
+                database: dbname,
+                timestamp: timestamp
+            }
+        } else {
             return null;
         }
-
-        const timestamp = this.fromFileToDate(createdAt)
-        return {
-            filename: filename,
-            database: dbname,
-            timestamp: timestamp 
-        };
     }
 
     load (databases) {
