@@ -11,18 +11,20 @@ const mysql = require('mysql');
 const config = require('config');
 const mysqldump = require('mysqldump');
 const Backups = require('./backup');
+const Database = require('./database');
 
 class Manager {
     constructor ({ host, user, password }, cmd) {
         this.host = host;
         this.user = user;
         this.password = password;
+
+        this.databases = [];
         this.connection = mysql.createConnection({ host, user, password });
         this.cmd = cmd;
         this.saveCache = [];
 
         this.backups = new Backups(config.backupPath);
-        this.dblist = [];
     }
 
     get timestamp () {
@@ -56,10 +58,15 @@ class Manager {
 
     async listDatabases () {
         const { results, fields } = await this.query('SHOW DATABASES');
-
-        this.dblist = results.map(row => row.Database)
+        const dbnames = results.map(row => row.Database)
             .filter(name => config.ignored_databases.indexOf(name) === -1);
-        return this.dblist;
+
+        for (let i = 0; i < dbnames.length; i++) {
+            const dbname = dbnames[i];
+            const database = new Database(dbname, this.connection);
+            const tables = await database.loadTables();
+            this.databases.push(database);
+        }
     }
 
     loadBackups () {
@@ -68,35 +75,12 @@ class Manager {
     }
 
     save (dbname) {
-        return new Promise((resolve, reject) => {
-            const filename = `${dbname}_${this.timestamp}.sql`;
-            const fullPath = path.join(config.backupPath, filename);
-
-            mysqldump({
-                host: this.host,
-                user: this.user,
-                password: this.password,
-                database: dbname,
-                dest: fullPath,
-            }, err => {
-                if (err) return reject(err.message);
-                console.log(`New save created: ${filename}`);
-
-                this.saveCache.push(fullPath);
-                return resolve(fullPath);
-            });
-        });
     }
 
     store () {
-        this.saveCache.forEach(save => {
-            const filestat = path.parse(save);
-            const savePath = path.join(__dirname, '..', save);
-        });
     }
 
     exit() {
-        process.exit(0);
     }
 }
 

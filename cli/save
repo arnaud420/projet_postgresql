@@ -20,20 +20,7 @@ async function main() {
 
     // Test mysql connection
     await manager.testConnection();
-
-    // Get databases
-    console.log(await manager.listDatabases());
-
-    manager.loadBackups();
-    manager.backupslist.forEach(backup => console.log(backup))
-
-    try {
-        const newSave = await manager.save('wordpress')
-        manager.store();
-        manager.exit();
-    } catch(e) {
-        console.error(e.message)
-    }
+    await manager.listDatabases();
 }
 
 main();
