@@ -18,12 +18,18 @@ async function main() {
     // const cmd = new Command(process.argv);
     const manager = new Manager(config.database.connection);
 
-    // Test mysql connection
-    await manager.testConnection();
-    await manager.listDatabases();
+    try {
+        await manager.testConnection();
+        await manager.listDatabases();
 
-    await manager.save();
-    await manager.loadBackups();
+        // await manager.save();
+        await manager.loadBackups();
+        await manager.restore(['test']);
+    } catch(e) {
+        console.error(e.message);
+        process.exit(42);
+    }
+    // Test mysql connection
     process.exit(0);
 }
 

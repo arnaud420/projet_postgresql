@@ -98,6 +98,32 @@ class Manager {
         });
     }
 
+    async restore (databaseToRestore) {
+        let backupPath;
+
+        if (databaseToRestore) {
+            databaseToRestore = this.databases.filter(db => {
+                return (databaseToRestore.indexOf(db.name) !== -1);
+            });
+        } else {
+            databaseToRestore = this.databases;
+        }
+
+        let step = 0;
+        while (step < databaseToRestore.length) {
+            const db = databaseToRestore[step];
+            try {
+                const sqlfiles = await this.backups.restore(db.name, backupPath);
+                this.log(`Restoring database --> ${db.name}`);
+                console.log(sqlfiles);
+                // this.backups.removeTmpDir();
+            } catch (err) {
+                throw err;
+            }
+            step++;
+        }
+    }
+
     async save (databaseToSave) {
         if (databaseToSave) {
             databaseToSave = this.databases.filter(db => {
