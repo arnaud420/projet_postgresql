@@ -9,6 +9,8 @@ const path = require('path');
 
 const mysql = require('mysql');
 const config = require('config');
+
+// Import default class
 const Backups = require('./backup');
 const Database = require('./database');
 
@@ -88,9 +90,12 @@ class Manager {
         }
     }
 
-    loadBackups () {
-        const numberOfBackups = this.backups.load(this.dbnames);
-        this.log(`${numberOfBackups} backups loaded.`)
+    async loadBackups () {
+        const loadedDb = await this.backups.load(this.dbnames);
+        loadedDb.forEach(dbname => {
+            const lastBackup = this.backups.getLastBackup(dbname);
+            this.log(`Last backup: ${lastBackup.filename}`);
+        });
     }
 
     async save (databaseToSave) {
@@ -114,9 +119,6 @@ class Manager {
             }
             step++;
         }
-    }
-
-    exit() {
     }
 }
 

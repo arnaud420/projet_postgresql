@@ -7,6 +7,7 @@
             "password": "password"
         }
     },
+    "save_retention": 5,
     "ignored_databases": [
         "information_schema",
         "mysql",

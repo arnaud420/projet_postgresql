@@ -22,7 +22,15 @@ module.exports = class Database {
     }
 
     get timestamp () {
-        return new Date().toISOString();
+        const datetime = new Date();
+        const formatTimestamps = [];
+        formatTimestamps.push(datetime.getDate());
+        formatTimestamps.push(datetime.getMonth());
+        formatTimestamps.push(datetime.getFullYear());
+        formatTimestamps.push(datetime.getHours());
+        formatTimestamps.push(datetime.getMinutes());
+        formatTimestamps.push(datetime.getSeconds());
+        return formatTimestamps.join('-');
     }
 
     createTmpDir() {

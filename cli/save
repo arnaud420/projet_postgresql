@@ -22,9 +22,9 @@ async function main() {
     await manager.testConnection();
     await manager.listDatabases();
 
-    manager.loadBackups();
-    // await manager.save();
+    await manager.save();
+    await manager.loadBackups();
+    process.exit(0);
 }
 
 main();
-
