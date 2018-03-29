@@ -43,9 +43,7 @@ module.exports = class Backups {
     deleteBackup (path) {
         return new Promise((resolve, reject) => {
             fs.unlink(path, err => {
-                if (err) {
-                    return reject(err)
-                }
+                if (err) return reject(err)
                 return resolve(path);
             });
         })
