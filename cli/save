@@ -14,10 +14,65 @@ const config = require('config');
 const Manager = require('lib/manager');
 const Command = require('lib/command');
 
+// Functions
+
+function countSigleInString(string, sigle) {
+    let count = 0;
+    let position = string.indexOf(sigle);
+
+    while (position != -1) {
+       count++;
+       position = string.indexOf(sigle, position + 1);
+    }
+    return count
+}
+
 async function main() {
     // const cmd = new Command(process.argv);
+    const cmd = new Command(process.argv);
+
     const manager = new Manager(config.database.connection);
 
+    const save = cmd.options.save
+    const saveAll = cmd.options.all
+
+    let databasesToSave = []
+
+    const dbNumbers = countSigleInString(save, '+') + 1;
+    const dbStartTableNumber = countSigleInString(save, ':');
+    const dbTablesNumber = countSigleInString(save, ',');
+
+    const dbArray = save.split('+')
+
+    if (dbNumbers >= 1 ) {
+        for (let i = 0; i < dbArray.length; i++) {
+            let dbName = dbArray[i].split(':')[0]
+            let dbTable = dbArray[i].split(':')[1]
+            databasesToSave[i] = {
+                        'name' : dbName,
+                    }
+            if (dbStartTableNumber > 0 && dbTable != undefined) {
+                
+                let splitDbTable = dbTable.split(',')
+                databasesToSave[i] = {
+                        'name' : dbName,
+                        'tables': dbTable
+                    }
+
+                if (dbTablesNumber > 0) {
+                    databasesToSave[i] = {
+                        'name' : dbName,
+                        'tables': splitDbTable
+                    }
+                }
+            }
+        }
+    }
+
+    console.log(databasesToSave)
+    
+
+    /*
     // Test mysql connection
     await manager.testConnection();
 
@@ -34,7 +89,7 @@ async function main() {
     } catch(e) {
         console.error(e.message)
     }
+    */
 }
 
 main();
-
