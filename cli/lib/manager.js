@@ -9,6 +9,7 @@ const path = require('path');
 
 const mysql = require('mysql');
 const config = require('config');
+const importer = require('node-mysql-importer');
 
 // Import default class
 const Backups = require('./backup');
@@ -29,16 +30,25 @@ class Manager {
         this.logging = logging;
     }
 
+    getCredentials (dbname) {
+        return {
+            host: this.host,
+            user: this.user,
+            password: this.password,
+            database: dbname
+        };
+    }
+
     get dbnames() {
         return this.databases.map(db => db.name);
     }
 
-    get timestamp () {
-        return new Date().toISOString();
+    get backupnames() {
+        return this.backups.map(backup => backup.database);
     }
 
-    get backupslist () {
-        return this.backups.list;
+    get timestamp () {
+        return new Date().toISOString();
     }
 
     log (message, err=false) {
@@ -98,25 +108,42 @@ class Manager {
         });
     }
 
+    async restoreFiles (dbname, sqlfiles) {
+        let step = 0;
+
+        importer.config(this.getCredentials(dbname));
+        while (step < sqlfiles.length) {
+            const filepath = sqlfiles[step];
+            try {
+                await importer.importSQL(filepath);
+                console.log(`Restored --> ${filepath}`);
+                step++;
+            } catch (e) {
+                throw e;
+            }
+        }
+        return step;
+    }
+
     async restore (databaseToRestore) {
         let backupPath;
 
         if (databaseToRestore) {
-            databaseToRestore = this.databases.filter(db => {
-                return (databaseToRestore.indexOf(db.name) !== -1);
+            databaseToRestore = this.backups.dbnames.filter(name => {
+                return (databaseToRestore.indexOf(name) !== -1);
             });
         } else {
-            databaseToRestore = this.databases;
+            databaseToRestore = this.backups.dbnames;
         }
 
         let step = 0;
         while (step < databaseToRestore.length) {
             const db = databaseToRestore[step];
             try {
-                const sqlfiles = await this.backups.restore(db.name, backupPath);
-                this.log(`Restoring database --> ${db.name}`);
-                console.log(sqlfiles);
-                // this.backups.removeTmpDir();
+                const sqlfiles = await this.backups.restore(db, backupPath);
+                this.log(`Restoring database --> ${db}`);
+                await this.restoreFiles(db, sqlfiles);
+                this.backups.removeTmpDir();
             } catch (err) {
                 throw err;
             }

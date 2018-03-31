@@ -11,26 +11,31 @@ require('app-module-path').addPath(__dirname);
 const config = require('config');
 
 // Import classes
-const Manager = require('lib/manager');
 const Command = require('lib/command');
+const Client = require('lib/client');
+const Backup = require('lib/backup');
 
 async function main() {
-    // const cmd = new Command(process.argv);
-    const manager = new Manager(config.database.connection);
+    const schemaTest = new Client({
+        host: '127.0.0.1',
+        user: 'root',
+        password: 'root',
+        database: 'phonik001'
+    });
 
     try {
-        await manager.testConnection();
-        await manager.listDatabases();
+        await schemaTest.init();
 
-        // await manager.save();
-        await manager.loadBackups();
-        await manager.restore(['test']);
-    } catch(e) {
+        const backupTest = new Backup(schemaTest);
+        // await backupTest.save();
+
+        await backupTest.restore('./backups/phonik001_31-2-2018-19-23-16.tar.gz');
+        // console.log(await schema.fetchTables());
+        process.exit(0);
+    } catch (e) {
         console.error(e.message);
         process.exit(42);
     }
-    // Test mysql connection
-    process.exit(0);
 }
 
 main();

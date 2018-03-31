@@ -8,167 +8,247 @@ const fs = require('fs');
 const path = require('path');
 const config = require('config');
 const targz = require('targz');
+const mysqldump = require('mysqldump');
 
-module.exports = class Backups {
-    constructor (rootPath) {
-        this.rootPath = rootPath;
-        this.loaded = {};
-        this.tmpDirPath = "";
+class Backup {
+    constructor (client, savepath) {
+        this.savepath = savepath || config.backupPath;
+        this.client = client;
     }
 
-    static getTableName(filepath) {
-        const filename = path.basename(filepath);
-        const [ fullname, ext ] = filename.split('.sql');
-        const [ dbname, tablename, timestamp ] = filename.split('_');
-        return tablename;
+    get dbname () {
+        return this.client.database;
     }
 
-    createTmpDir (filename) {
+    get timestamp () {
+        const datetime = new Date();
+        const formatTimestamps = [];
+        formatTimestamps.push(datetime.getDate());
+        formatTimestamps.push(datetime.getMonth());
+        formatTimestamps.push(datetime.getFullYear());
+        formatTimestamps.push(datetime.getHours());
+        formatTimestamps.push(datetime.getMinutes());
+        formatTimestamps.push(datetime.getSeconds());
+        return formatTimestamps.join('-');
+    }
+
+    get newSavename () {
+        return `${this.dbname}_${this.timestamp}.tar.gz`;
+    }
+
+    // SAVING
+    createFilesCache (cachepath) {
         return new Promise((resolve, reject) => {
-            fs.mkdir(path.join('/tmp', filename), err => {
-                if (err) {
-                    return reject(err)
-                }
-                return resolve(path.join('/tmp', filename));
+            fs.mkdir(cachepath, e => {
+                if (e) return reject(e);
+                this.cachepath = cachepath;
+                resolve();
             });
         });
     }
 
-    removeTmpDir () {
-        fs.readdirSync(this.tmpDirPath)
-            .forEach(file => {
-                fs.unlinkSync(path.join(this.tmpDirPath, file));
+    deleteFilesCache () {
+        return new Promise((resolve, reject) => {
+            fs.readdirSync(this.cachepath).forEach(file => {
+                fs.unlinkSync(path.join(this.cachepath, file))
             });
-        fs.rmdirSync(this.tmpDirPath);
+            fs.rmdir(this.cachepath, e => {
+                if (e) reject(e);
+                resolve();
+            });
+        });
     }
 
-    getBackupPaths (dbname) {
-        return this.loaded[dbname].map(backup => backup.path);
-    }
-
-    fromFileToDate (timestamp) {
-        const [day, month, year, hours, min, sec] = timestamp.split('-');
-        return new Date(year, month, day, hours, min, sec);
-    }
-
-    validateFile (filename, databases) {
-        const [ fullname, ext ] = filename.split('.tar.gz');
-        const [ dbname, createdAt ] = fullname.split('_');
-
-        if (typeof(ext) !== 'undefined' && databases.indexOf(dbname) !== -1) {
-            const timestamp = this.fromFileToDate(createdAt);
-
-            if (!timestamp) return null;
-            if (typeof(this.loaded[dbname]) === 'undefined') {
-                this.loaded[dbname] = [];
-            }
-            return [dbname, {
-                filename: filename,
-                timestamp: timestamp,
-                path: path.join(this.rootPath, filename)
-            }];
+    filterTables (tablenames) {
+        if (tablenames) {
+            return tablenames.filter(name => {
+                return this.client.tablenames.indexOf(name) !== -1;
+            });
         } else {
-            return null;
+            return this.client.tablenames;
         }
     }
 
-    deleteBackup (path) {
+    saveTable (name) {
         return new Promise((resolve, reject) => {
-            fs.unlink(path, err => {
-                if (err) return reject(err)
-                return resolve(path);
+            const filename = `${name}.sql`;
+            const filepath = path.join(this.cachepath, filename);
+
+            mysqldump({
+                ...this.client.credentials,
+                dest: filepath,
+                tables: [name]
+            }, e => {
+                if (e) return reject(e);
+                resolve(filepath);
             });
-        })
+        });
     }
 
-    async applyRetention (dbname) {
-        const toDeleteBackupNb = this.loaded[dbname].length - config.save_retention;
-        let step = 0;
+    async saveAllTables (tableToSave) {
+        let tIndex = 0;
 
-        while (step < toDeleteBackupNb) {
-            const backup = this.loaded[dbname].pop();
+        while (tIndex < tableToSave.length) {
             try {
-                const path = await this.deleteBackup(backup.path);
-                console.log(`Delete old backup: ${path}`);
-                step++;
+                const tablename = tableToSave[tIndex];
+                const newSave = await this.saveTable(tablename);
+                console.log(`New savefile => ${newSave}`);
+                tIndex++;
             } catch (e) {
-                console.error(e.message);
-                process.exit(0);
-            }
-        }
-        return step;
-    }
-
-    getLastBackup (dbname) {
-        return this.loaded[dbname][0];
-    }
-
-    async load (databases) {
-        const files = fs.readdirSync(this.rootPath);
-
-        for (let i = 0; i < files.length; i++) {
-            const [ dbname, backup ] = this.validateFile(files[i], databases);
-            if (dbname && backup) this.loaded[dbname].push(backup);
-        }
-
-        const loadedDatabase = Object.keys(this.loaded);
-        let step = 0;
-        while (step < loadedDatabase.length) {
-            const name = loadedDatabase[step];
-            this.loaded[name] = this.loaded[name].sort((a, b) => b.timestamp - a.timestamp);
-            await this.applyRetention(name);
-            step++;
-        }
-        return Object.keys(this.loaded);
-    }
-
-    async decompress (backup) {
-        this.tmpDirPath = await this.createTmpDir(backup.filename);
-        return new Promise((resolve, reject) => {
-            targz.decompress({
-                src: backup.path,
-                dest: this.tmpDirPath
-            }, err => {
-                if (err) return reject(err);
-                return resolve(this.tmpDirPath);
-            });
-        });
-    }
-
-    async restore(dbname, backupPath) {
-        let backupToRestore = {};
-
-        if (!this.loaded[dbname]) {
-            throw 'Database not loaded.';
-        } else {
-            if (backupPath) {
-                const backupPaths = this.getBackupPaths(dbname);
-                const backupIndex = backupPaths.indexOf(backupPath);
-
-                if (backupIndex === -1) {
-                    console.error(`Invalid backup file: ${backupPath}`);
-                    process.exit(10);
-                }
-                backupToRestore = this.loaded[dbname][backupIndex];
-            } else {
-                backupToRestore = this.getLastBackup(dbname);
-            }
-            console.log(`Decompressing backup --> ${backupToRestore.filename}`);
-            try {
-                await this.decompress(backupToRestore);
-                const sqlFiles = fs
-                    .readdirSync(this.tmpDirPath)
-                    .map(filepath => path.join(this.tmpDirPath, filepath));
-
-                return sqlFiles;
-            } catch(e) {
                 throw e;
             }
+        }
+        return tIndex;
+    }
 
-            return {
-                restoredBackup: backupToRestore
-            };
+    compress () {
+        return new Promise((resolve, reject) => {
+            const cachename = path.basename(this.cachepath);
+            const destpath = path.join(this.savepath, cachename)
+
+            targz.compress({
+                src: this.cachepath,
+                dest: destpath,
+            }, e => {
+                if (e) return reject(e);
+                resolve(destpath);
+            });
+        });
+    }
+
+    async save (tableToSave) {
+        const newSavename = this.newSavename;
+
+        try {
+            await this.client.fetchTables();
+            tableToSave = this.filterTables(tableToSave)
+            console.log(`Start saving tables: ${tableToSave.toString()}`);
+            await this.createFilesCache(path.join('/tmp', newSavename));
+            await this.saveAllTables(tableToSave);
+            await this.compress();
+            await this.deleteFilesCache();
+            return;
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    // RESTORE
+    fromStrToDate (datetime) {
+        const [ day, month, year, hour, min, sec ] = datetime.split('-');
+        return new Date(year, month, day, hour, min, sec);
+    }
+
+    async decompress (savedata) {
+        return new Promise((resolve, reject) => {
+            targz.decompress({
+                src: savedata.path,
+                dest: this.cachepath
+            }, e => {
+                if (e) reject(e);
+                resolve();
+            });
+        });
+    }
+
+    serializeSavename (savepath) {
+        if (fs.existsSync(savepath)) {
+            const savename = path.basename(savepath);
+            const [ filename, ext ] = savename.split('.tar.gz');
+            if (typeof(ext) !== 'undefined') {
+                const [ dbname, timestamp ] = filename.split('_');
+                if (dbname && timestamp) {
+                    const datetime = this.fromStrToDate(timestamp);
+                    if (datetime) {
+                        return {
+                            database: dbname,
+                            timestamp: datetime,
+                            path: savepath,
+                            name: savename
+                        };
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    getFileContent (filepath) {
+        return new Promise((resolve, reject) => {
+            const [ tablename, ext ] = path.basename(filepath).split('.sql');
+            if (typeof(ext) !== 'undefined') {
+                fs.readFile(filepath, 'utf-8', (err, data) => {
+                    if (err) reject(err);
+                    const content = data.toString().split(';');
+                    return resolve({
+                        table: tablename,
+                        content
+                    });
+                });
+            } else {
+                reject(new Error('Syntax error'));
+            }
+        });
+    }
+
+    async importFile (filepath) {
+        let queryIndex = 0;
+
+        try {
+            const { table, content } = await this.getFileContent(filepath);
+            await this.client.fetchTables();
+
+            if (this.client.tablenames.indexOf(table) !== -1) {
+                await this.client.query(`TRUNCATE table ${table};`);
+            }
+
+            while (queryIndex < content.length) {
+                const query = content[queryIndex].trim();
+                if (query.length) {
+                    await this.client.query(query);
+                }
+                queryIndex++;
+            }
+            return queryIndex;
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    async executeFiles () {
+        const files = fs.readdirSync(this.cachepath).reverse();
+        let index = 0;
+
+        while (index < files.length) {
+            const filepath = path.join(this.cachepath, files[index]);
+            try {
+                await this.importFile(filepath);
+                index++;
+            } catch (e) {
+                throw e;
+            }
+        }
+        return index;
+    }
+
+    async restore (savepath) {
+        try {
+            const savedata = this.serializeSavename(savepath);
+            if (savedata) {
+                await this.client.query('SET FOREIGN_KEY_CHECKS=0;');
+                await this.createFilesCache(path.join('/tmp', savedata.name));
+                await this.decompress(savedata);
+                await this.executeFiles();
+                await this.deleteFilesCache();
+                await this.client.query('SET FOREIGN_KEY_CHECKS=1;');
+            } else {
+                throw new Error(`File doesn't exist. ${savepath}`);
+            }
+        } catch (e) {
+            throw e;
         }
     }
 }
+
+module.exports = Backup;
 
