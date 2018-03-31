@@ -134,7 +134,7 @@ class Backup {
     }
 
     // RESTORE
-    fromStrToDate (datetime) {
+    static fromStrToDate (datetime) {
         const [ day, month, year, hour, min, sec ] = datetime.split('-');
         return new Date(year, month, day, hour, min, sec);
     }
@@ -151,14 +151,14 @@ class Backup {
         });
     }
 
-    serializeSavename (savepath) {
+    static serializeSavename (savepath) {
         if (fs.existsSync(savepath)) {
             const savename = path.basename(savepath);
             const [ filename, ext ] = savename.split('.tar.gz');
             if (typeof(ext) !== 'undefined') {
                 const [ dbname, timestamp ] = filename.split('_');
                 if (dbname && timestamp) {
-                    const datetime = this.fromStrToDate(timestamp);
+                    const datetime = Backup.fromStrToDate(timestamp);
                     if (datetime) {
                         return {
                             database: dbname,
@@ -233,7 +233,7 @@ class Backup {
 
     async restore (savepath) {
         try {
-            const savedata = this.serializeSavename(savepath);
+            const savedata = Backup.serializeSavename(savepath);
             if (savedata) {
                 await this.client.query('SET FOREIGN_KEY_CHECKS=0;');
                 await this.createFilesCache(path.join('/tmp', savedata.name));

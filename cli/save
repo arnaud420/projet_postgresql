@@ -14,28 +14,36 @@ const config = require('config');
 const Command = require('lib/command');
 const Client = require('lib/client');
 const Backup = require('lib/backup');
+const Manager = require('lib/manager');
 
 async function main() {
-    const schemaTest = new Client({
-        host: '127.0.0.1',
-        user: 'root',
-        password: 'root',
-        database: 'phonik001'
-    });
+
+    const cmd = new Command(process.argv);
+    const manager = new Manager(cmd.options);
 
     try {
-        await schemaTest.init();
-
-        const backupTest = new Backup(schemaTest);
-        // await backupTest.save();
-
-        await backupTest.restore('./backups/phonik001_31-2-2018-19-23-16.tar.gz');
-        // console.log(await schema.fetchTables());
-        process.exit(0);
+        await manager.loadDatabases();
+        await manager.start();
     } catch (e) {
-        console.error(e.message);
-        process.exit(42);
+        manager.quit(e);
     }
+    // const schemaTest = new Client({
+    //     ...config.database.connection,
+    //     database: 'pc-expert'
+    // });
+    //
+    // try {
+    //     await schemaTest.init();
+    //
+    //     const backupTest = new Backup(schemaTest);
+    //     await backupTest.save();
+    //
+    //     // await backupTest.restore('./backups/pc-expert_31-2-2018-19-43-23.tar.gz');
+    //     process.exit(0);
+    // } catch (e) {
+    //     console.error(e.message);
+    //     process.exit(42);
+    // }
 }
 
 main();
