@@ -12,7 +12,7 @@ class Command {
         this.options = program.version('0.1.0')
             .option('-r, --restore [backupFile]', 'Restore a saved database.')
             .option('-s, --save [dbnames]', 'Save a specific database db1+db2+db3.')
-            .option('-vv, --verbose', 'Show logs.')
+            .option('-v, --verbose', 'Show logs.')
             .option('-l, --last [dbname]', 'Restore available backup for [dbname]')
             .parse(args);
 

@@ -24,6 +24,7 @@ async function main() {
     try {
         await manager.loadDatabases();
         await manager.start();
+        manager.quit();
     } catch (e) {
         manager.quit(e);
     }

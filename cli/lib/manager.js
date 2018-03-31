@@ -31,6 +31,25 @@ class Manager {
         }
     }
 
+    async saveDatabases (databaseToSave) {
+        let step = 0;
+
+        while (step < databaseToSave.length) {
+            try {
+                const client = new Client({
+                    ...config.database.connection,
+                    database: databaseToSave[step]
+                });
+                await new Backup(client, this.options.verbose).save();
+                step++;
+            } catch (e) {
+                this.quit(e);
+            }
+        }
+        this.applyRetention();
+        return step;
+    }
+
     async start () {
         let databaseToSave = [];
         if (this.options.save) {
@@ -39,12 +58,12 @@ class Manager {
             } else {
                 databaseToSave = this.options.save.split('+');
                 databaseToSave.forEach(name => {
-                    if (this.databases.indexOf(name) === -1) {
+                    if (this.databases.indexOf(name) === -1)
                         throw new Error(`${name} doesn't exist.`);
-                    }
                 });
             }
             console.log(`Saving ${databaseToSave}`);
+            return await this.saveDatabases(databaseToSave);
         } else if (this.options.restore) {
             if (!fs.existsSync(this.options.restore)) {
                 throw new Error(`${this.options.restore} doesn't exist.`);
@@ -63,6 +82,14 @@ class Manager {
         } catch (e) {
             this.quit(e);
         }
+    }
+
+    applyRetention() {
+        this.loadBackups();
+        Object.keys(this.backups).forEach(name => {
+            if (this.backups[name].length > config.save_retention) {
+            }
+        });
     }
 
     sortBackups () {

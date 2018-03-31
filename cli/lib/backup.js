@@ -11,9 +11,10 @@ const targz = require('targz');
 const mysqldump = require('mysqldump');
 
 class Backup {
-    constructor (client, savepath) {
-        this.savepath = savepath || config.backupPath;
+    constructor (client, logging) {
+        this.savepath = config.backupPath;
         this.client = client;
+        this.logging = logging || false;
     }
 
     get dbname () {
@@ -33,7 +34,17 @@ class Backup {
     }
 
     get newSavename () {
-        return `${this.dbname}_${this.timestamp}.tar.gz`;
+        return `${this.dbname}.${this.timestamp}.tar.gz`;
+    }
+
+    log (message, isError) {
+        if (this.logging) {
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
     }
 
     // SAVING
@@ -92,7 +103,7 @@ class Backup {
             try {
                 const tablename = tableToSave[tIndex];
                 const newSave = await this.saveTable(tablename);
-                console.log(`New savefile => ${newSave}`);
+                this.log(`New savefile => ${newSave}`);
                 tIndex++;
             } catch (e) {
                 throw e;
@@ -122,7 +133,7 @@ class Backup {
         try {
             await this.client.fetchTables();
             tableToSave = this.filterTables(tableToSave)
-            console.log(`Start saving tables: ${tableToSave.toString()}`);
+            this.log(`Start saving tables: ${tableToSave.toString()}`);
             await this.createFilesCache(path.join('/tmp', newSavename));
             await this.saveAllTables(tableToSave);
             await this.compress();
@@ -156,7 +167,7 @@ class Backup {
             const savename = path.basename(savepath);
             const [ filename, ext ] = savename.split('.tar.gz');
             if (typeof(ext) !== 'undefined') {
-                const [ dbname, timestamp ] = filename.split('_');
+                const [ dbname, timestamp ] = filename.split('.');
                 if (dbname && timestamp) {
                     const datetime = Backup.fromStrToDate(timestamp);
                     if (datetime) {
