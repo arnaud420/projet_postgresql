@@ -74,6 +74,13 @@ cd bin
  ```
 
 
+ ```sql
+ GRANT Show databases ON *.* TO 'USER'@'%' ;
+ GRANT Select ON *.* TO 'USER'@'%' ;
+ GRANT Drop ON *.* TO 'USER'@'%' ;
+ GRANT Create ON *.* TO 'USER'@'%' ;
+ FLUSH PRIVILEGES ;
+ ```
 - **"-a"** : 
 
  Sauvegarde toutes les base de données.
