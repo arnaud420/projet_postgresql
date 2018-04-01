@@ -56,6 +56,7 @@ Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
  GRANT Select ON *.* TO 'USER'@'%' ;
  GRANT Drop ON *.* TO 'USER'@'%' ;
  GRANT Create ON *.* TO 'USER'@'%' ;
+ GRANT Insert ON *.* TO 'USER'@'%' ; 
  FLUSH PRIVILEGES ;
  ```
 
