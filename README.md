@@ -48,32 +48,9 @@ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
-## Lancement du script
+## Prerequis
 
-```
-git clone https://github.com/arnaud420/projet_postgresql.git
-
-cd projet_postgresql
-
-cd bin
-
-./save
-
-```
-
-### Arguments disponible dans le cli
-
-- **"-r nom-bdd"** :
-
- Permet de restaurer la **base de donnée SQL** mis en **argument**.
-
- Exemple d'utilisation : 
-
- ```
- -r wp-monsiteweb
- ```
-
-
+Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
  ```sql
  GRANT Show databases ON *.* TO 'USER'@'%' ;
  GRANT Select ON *.* TO 'USER'@'%' ;
@@ -81,27 +58,31 @@ cd bin
  GRANT Create ON *.* TO 'USER'@'%' ;
  FLUSH PRIVILEGES ;
  ```
-- **"-a"** : 
 
- Sauvegarde toutes les base de données.
-
-- **"-s"** bdd :
-
- Sauvegarde la **base de donnée SQL** mis en **argument**.
-
- Toutes les bases de données sont stockées dans le dossier "backups".
-
-- **"-vv"** :
-
- Affiche les fichiers de logs.
-
- **Commande à utiliser en plus des autres commandes.**
- 
- Exemple d'utilisation :
+## Installation
 
  ```
- -s wp-monsiteweb -vv
+git clone https://github.com/arnaud420/projet_postgresql.git
+
+cd projet_postgresql
+
+ npm install
+
+
  ```
+
+## Lancement du script
+
+```
+ ./save -h
+```
+
+### Options
+
+```
+./save -r [backup-file]
+```
+Restaurer une base de donnée via un fichier de sauvegarde.
 
 Authors:
 - Antoine Chiny
