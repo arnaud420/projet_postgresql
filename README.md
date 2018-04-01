@@ -61,13 +61,10 @@ Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
 
 ## Installation
 
- ```
-git clone https://github.com/arnaud420/projet_postgresql.git
-
-cd projet_postgresql
-
- npm install
-
+ ```bash
+> git clone https://github.com/arnaud420/projet_postgresql.git
+> cd projet_postgresql
+> npm install
 
  ```
 
@@ -75,14 +72,56 @@ cd projet_postgresql
 
 ```
  ./save -h
+
+  Usage: save [options]
+
+  Options:
+
+    -V, --version               output the version number
+    -r, --restore [backupFile]  Restore a saved database.
+    -s, --save [dbnames]        Save a specific database db1+db2+db3.
+    -v, --verbose               Show logs.
+    -l, --last [dbname]         Restore available backup for [dbname]
+    -h, --help                  output usage information
 ```
 
 ### Options
 
+> --save, -s
+- Sauvegarde une/des base de données spécifiques.
+- Si aucun arguments sauvegarde toutes les bases
+- Exemple ```./save -s wordpress+employees```
+> --restore, -r
+- Restaurer une base de donnée avec une archive spécifique.
+> --last, -l < nom bdd >
+- Restaure la derniére sauvegarde.
+> --verbose, -v
+- Affiche les logs
+
+### Configuration
+```js
+{
+    // Informations de connection du client mysql.
+    "database": {
+        "client": "mysql",
+        "connection": {
+            "host": "127.0.0.1",
+            "user": "user",
+            "password": "password"
+        }
+    },
+    // Nombre maximum de sauvegarde
+    "save_retention": 5,
+    // Databases ignorées lors d'un -s all
+    "ignored_databases": [
+        "information_schema",
+        "mysql",
+        "performance_schema"
+    ],
+    // Dossier ou son stocké les sauvegardes
+    "backupPath": "./backups/"
+}
 ```
-./save -r [backup-file]
-```
-Restaurer une base de donnée via un fichier de sauvegarde.
 
 Authors:
 - Antoine Chiny
