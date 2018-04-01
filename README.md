@@ -3,10 +3,6 @@
 
 ## Presentation du projet
 
-Installation et configuration d'un serveur MySQL et mise en place de l'outil phpMyAdmin.
-
-Installer et configurer apache2.
-
 Créer un script permettant :
 
 - De sauvegarder le serveur MySQL dans une archive compressee.
@@ -15,13 +11,13 @@ Créer un script permettant :
 
 ## Prérequis
 
-- MySQL.
+- MySQL / MariaDB.
 - apache2.
 - phpMyAdmin.
 - Gestionnaire de paquet NPM. 
 - NodeJs. 
 
-Installation à partir d'une debian 8 ou 9 avec **sudo**, **MySQL** et **apache2** deja sur la machine.
+Installation à partir d'une debian 8 ou 9 avec **sudo**, **MySQL** et **apache2** déjà présent sur la machine.
 
 **phpmyadmin** :
 
@@ -114,15 +110,18 @@ Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
 ### Options
 
 > --save, -s
-- Sauvegarde une/des base de données spécifiques.
-- Si aucun arguments sauvegarde toutes les bases
+- Sauvegarde une/des bases de données spécifiques.
+- Si aucun argument n'est donné, sauvegarde toutes les bases.
 - Exemple ```./save -s wordpress+employees```
 > --restore, -r
-- Restaurer une base de donnée avec une archive spécifique.
+- Restaurer une base de données avec une archive spécifique.
+- Exemple  ```./save -r ./backups/wordpress.1-3-2018-20-8-51.tar.gz```
 > --last, -l < nom bdd >
 - Restaure la derniére sauvegarde.
+- Exemple ```./save -l wordpress```
 > --verbose, -v
-- Affiche les logs
+- Affiche les logs.
+- Exemple ```./save -s wordpress -v```
 
 Authors:
 - Antoine Chiny
