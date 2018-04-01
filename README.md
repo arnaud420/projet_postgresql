@@ -69,6 +69,31 @@ Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
 
  ```
 
+### Configuration
+```js
+{
+    // Informations de connection du client mysql.
+    "database": {
+        "client": "mysql",
+        "connection": {
+            "host": "127.0.0.1",
+            "user": "user",
+            "password": "password"
+        }
+    },
+    // Nombre maximum de sauvegarde
+    "save_retention": 5,
+    // Databases ignorées lors d'un -s all
+    "ignored_databases": [
+        "information_schema",
+        "mysql",
+        "performance_schema"
+    ],
+    // Dossier ou son stocké les sauvegardes
+    "backupPath": "./backups/"
+}
+```
+
 ## Lancement du script
 
 ```
@@ -98,31 +123,6 @@ Ajout des privilèges ```mysql``` nécessaire à la sauvegarde.
 - Restaure la derniére sauvegarde.
 > --verbose, -v
 - Affiche les logs
-
-### Configuration
-```js
-{
-    // Informations de connection du client mysql.
-    "database": {
-        "client": "mysql",
-        "connection": {
-            "host": "127.0.0.1",
-            "user": "user",
-            "password": "password"
-        }
-    },
-    // Nombre maximum de sauvegarde
-    "save_retention": 5,
-    // Databases ignorées lors d'un -s all
-    "ignored_databases": [
-        "information_schema",
-        "mysql",
-        "performance_schema"
-    ],
-    // Dossier ou son stocké les sauvegardes
-    "backupPath": "./backups/"
-}
-```
 
 Authors:
 - Antoine Chiny
