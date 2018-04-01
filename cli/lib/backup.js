@@ -11,7 +11,7 @@ const targz = require('targz');
 const mysqldump = require('mysqldump');
 
 class Backup {
-    constructor (client, logging) {
+    constructor (client, logging, savepath) {
         this.savepath = config.backupPath;
         this.client = client;
         this.logging = logging || false;
@@ -115,7 +115,7 @@ class Backup {
     compress () {
         return new Promise((resolve, reject) => {
             const cachename = path.basename(this.cachepath);
-            const destpath = path.join(this.savepath, cachename)
+            const destpath = path.join(config.backupPath, cachename)
 
             targz.compress({
                 src: this.cachepath,
@@ -140,6 +140,9 @@ class Backup {
             await this.deleteFilesCache();
             return;
         } catch (e) {
+            if (this.cachepath) {
+                await this.deleteFilesCache();
+            }
             throw e;
         }
     }
@@ -256,6 +259,9 @@ class Backup {
                 throw new Error(`File doesn't exist. ${savepath}`);
             }
         } catch (e) {
+            if (this.cachepath) {
+                await this.deleteFilesCache();
+            }
             throw e;
         }
     }

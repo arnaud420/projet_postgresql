@@ -28,23 +28,6 @@ async function main() {
     } catch (e) {
         manager.quit(e);
     }
-    // const schemaTest = new Client({
-    //     ...config.database.connection,
-    //     database: 'pc-expert'
-    // });
-    //
-    // try {
-    //     await schemaTest.init();
-    //
-    //     const backupTest = new Backup(schemaTest);
-    //     await backupTest.save();
-    //
-    //     // await backupTest.restore('./backups/pc-expert_31-2-2018-19-43-23.tar.gz');
-    //     process.exit(0);
-    // } catch (e) {
-    //     console.error(e.message);
-    //     process.exit(42);
-    // }
 }
 
 main();

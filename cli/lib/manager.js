@@ -31,6 +31,10 @@ class Manager {
         }
     }
 
+    get logging() {
+        return this.options.verbose;
+    }
+
     async saveDatabases (databaseToSave) {
         let step = 0;
 
@@ -40,14 +44,33 @@ class Manager {
                     ...config.database.connection,
                     database: databaseToSave[step]
                 });
-                await new Backup(client, this.options.verbose).save();
+                await new Backup(client, this.logging).save();
                 step++;
             } catch (e) {
                 this.quit(e);
             }
         }
-        this.applyRetention();
-        return step;
+        return await this.applyRetention();
+    }
+
+    async restoreDatabase (savepath) {
+        try {
+            const savedata = Backup.serializeSavename(savepath);
+            if (!savedata) throw new Error(`Invalid save format: ${savepath}`);
+
+            await this.loadDatabases();
+
+            if (this.databases.indexOf(savedata.database) === -1) {
+                await this.client.query(`CREATE DATABASE ${savedata.database};`);
+            }
+            const client = new Client({
+                ...config.database.connection,
+                database: savedata.database
+            });
+            await new Backup(client, this.logging).restore(savepath);
+        } catch (e) {
+            this.quit(e);
+        }
     }
 
     async start () {
@@ -67,9 +90,17 @@ class Manager {
         } else if (this.options.restore) {
             if (!fs.existsSync(this.options.restore)) {
                 throw new Error(`${this.options.restore} doesn't exist.`);
-            } else {
-                console.log(`Restore ${this.options.restore}`);
             }
+            console.log(`Restore ${this.options.restore}`);
+            return await this.restoreDatabase(this.options.restore);
+        } else if (this.options.last) {
+            this.loadBackups();
+            if (!this.backups[this.options.last]) {
+                throw new Error(`No backup for database ${this.options.last}`);
+            }
+            console.log(`Restore last backup for ${this.options.last}`);
+            const backup = this.backups[this.options.last].shift();
+            return await this.restoreDatabase(backup.path);
         }
     }
 
@@ -77,17 +108,29 @@ class Manager {
         try {
             const { results } = await this.client.query('SHOW DATABASES');
             results.forEach(row => {
-                this.databases.push(row[Object.keys(row).toString()]);
+                const dbname = row[Object.keys(row).toString()];
+                if (config.ignored_databases.indexOf(dbname) === -1) {
+                    this.databases.push(row[Object.keys(row).toString()]);
+                }
             });
         } catch (e) {
             this.quit(e);
         }
     }
 
-    applyRetention() {
+    async applyRetention() {
         this.loadBackups();
         Object.keys(this.backups).forEach(name => {
-            if (this.backups[name].length > config.save_retention) {
+            const backups = this.backups[name];
+            const backupToDelete = backups.length - config.save_retention;
+
+            if (backupToDelete > 0) {
+                for (let n = 0; n < backupToDelete; n++) {
+                    const firstBackup = backups.pop();
+                    if (!firstBackup || fs.unlinkSync(firstBackup.path)) {
+                        throw new Error(`Impossible to delete old backup: ${firstBackup.name}`);
+                    }
+                }
             }
         });
     }
